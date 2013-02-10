@@ -1,0 +1,101 @@
+<% content_for :javascript do %>
+  <script>
+    var table = $("#tree");
+
+    function droppableSetup() {
+      $(this).droppable({
+        accept: ".file, .directory",
+        drop: function(e, ui) {
+          var droppedEl, node;
+
+          droppedEl = ui.draggable.parents("tr");
+          node = $("#tree").treeTable("node", droppedEl.data("ttId"));
+
+          $("#tree").treeTable("move", node.id, $(this).data("ttId"));
+
+          // Update server-side tree
+          $.ajax({
+            data: { node: { parent_id: node.parentId } },
+            type: "PUT",
+            url: "/nodes/" + node.id
+          });
+        },
+        hoverClass: "accept",
+        over: function(e, ui) {
+          var droppedEl = ui.draggable.parents("tr");
+          if(this != droppedEl[0] && !$(this).is(".expanded")) {
+            $("#tree").treeTable("expandNode", $(this).data("ttId"));
+          }
+        }
+      });
+    }
+
+    table.treeTable({
+      expandable: true,
+      onNodeCollapse: function() {
+        var node = this;
+        table.treeTable("unloadBranch", node);
+      },
+      onNodeExpand: function() {
+        var node = this;
+
+        // Render loader/spinner while loading
+        $.ajax({
+          async: false, // Must be false, otherwise loadBranch happens after showChildren?
+          url: "/nodes/" + node.id + "/children"
+        }).done(function(html) {
+          var rows = $(html).filter("tr");
+
+          rows.find(".directory").parents("tr").each(function() {
+            droppableSetup.apply(this);
+          })
+
+          table.treeTable("loadBranch", node, rows);
+        });
+      }
+    });
+
+    // Highlight selected row
+    $("#tree tbody tr").live("mousedown", function() {
+      $("tr.selected").removeClass("selected");
+      $(this).addClass("selected");
+    });
+
+    // Drag & Drop Example Code
+    $("#tree .file, #tree .directory").live("mouseenter", function() {
+      var el = $(this);
+
+      if(!el.data("dndInit")) {
+        el.data("dndInit", true);
+
+        el.draggable({
+          helper: "clone",
+          opacity: .75,
+          refreshPositions: true, // Performance?
+          revert: "invalid",
+          revertDuration: 300,
+          scroll: true
+        });
+      }
+    });
+
+    $("#tree .directory").parents("tr").each(function() {
+      droppableSetup.apply(this);
+    });
+  </script>
+<% end %>
+
+<h1>jQuery treeTable</h1>
+
+<table id="tree">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Date modified</th>
+      <th>Size</th>
+    </tr>
+  </thead>
+  <tbody>
+    <%= render @nodes %>
+  </tbody>
+</table>

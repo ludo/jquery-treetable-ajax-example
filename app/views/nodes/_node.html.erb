@@ -1,0 +1,7 @@
+<tr data-tt-id="<%= node.id %>" data-tt-parent-id="<%= node.parent_id %>" data-tt-branch="<%= node.kind == "directory" ? "true" : "false" %>">
+  <td>
+    <span class="<%= node.kind %>"><%= node.name %></span>
+  </td>
+  <td><%= node.modified_at ? node.modified_at.strftime('%b %e, %Y %I:%M %p') : '-' %></td>
+  <td><%= number_to_human_size(node.size) %></td>
+</tr>

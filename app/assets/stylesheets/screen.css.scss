@@ -1,0 +1,74 @@
+body {
+  background: #ddd;
+  color: #000;
+  font-family: Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+}
+
+#main {
+  background: #fff;
+  border-left: 20px solid #eee;
+  border-right: 20px solid #eee;
+  margin: 0 auto;
+  max-width: 800px;
+  padding: 20px;
+}
+
+pre.listing {
+  background: #eee;
+  border: 1px solid #ccc;
+  margin: .6em 0 .3em 0;
+  padding: .1em .3em;
+}
+
+pre.listing b {
+  color: #f00;
+}
+
+table {
+  border: 1px solid #888;
+  border-collapse: collapse;
+  font-size: .8em;
+  line-height: 1;
+  margin: .6em 0 1.8em 0;
+  width: 100%;
+}
+
+table caption {
+  font-size: .9em;
+  font-weight: bold;
+  margin-bottom: .2em;
+}
+
+table thead {
+  background: #aaa image-url('bg-table-thead.png') repeat-x top left;
+  font-size: .9em;
+}
+
+table thead tr th {
+  border: 1px solid #888;
+  font-weight: normal;
+  padding: .3em 1em .1em 1em;
+  text-align: left;
+}
+
+table tbody tr td {
+  cursor: default;
+  padding: .3em 1em;
+}
+
+table span {
+  background-position: center left;
+  background-repeat: no-repeat;
+  padding: .2em 0 .2em 1.5em;
+}
+
+table span.file {
+  background-image: image-url('file.png');
+}
+
+table span.directory {
+  background-image: image-url('folder.png');
+}

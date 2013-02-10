@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Commander</title>
+    <%= stylesheet_link_tag    "application", :media => "all" %>
+    <%= csrf_meta_tags %>
+  </head>
+  <body>
+    <div id="main">
+      <%= yield %>
+    </div>
+
+    <%= javascript_include_tag "application" %>
+    <%= yield :javascript %>
+  </body>
+</html>
