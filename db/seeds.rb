@@ -1,6 +1,7 @@
 require 'pp'
 
-tree = Hash.from_xml(`tree -XDh`)["tree"]
+# seeds.xml was generated with 'tree' command (tree -XDh)
+tree = Hash.from_xml(File.read(Rails.root.join("db/seeds.xml")))["tree"]
 report = tree["report"]
 
 def create_nodes(parent, tree)
