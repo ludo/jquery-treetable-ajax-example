@@ -9,9 +9,9 @@
           var droppedEl, node;
 
           droppedEl = ui.draggable.parents("tr");
-          node = $("#tree").treeTable("node", droppedEl.data("ttId"));
+          node = $("#tree").treetable("node", droppedEl.data("ttId"));
 
-          $("#tree").treeTable("move", node.id, $(this).data("ttId"));
+          $("#tree").treetable("move", node.id, $(this).data("ttId"));
 
           // Update server-side tree
           $.ajax({
@@ -24,17 +24,17 @@
         over: function(e, ui) {
           var droppedEl = ui.draggable.parents("tr");
           if(this != droppedEl[0] && !$(this).is(".expanded")) {
-            $("#tree").treeTable("expandNode", $(this).data("ttId"));
+            $("#tree").treetable("expandNode", $(this).data("ttId"));
           }
         }
       });
     }
 
-    table.treeTable({
+    table.treetable({
       expandable: true,
       onNodeCollapse: function() {
         var node = this;
-        table.treeTable("unloadBranch", node);
+        table.treetable("unloadBranch", node);
       },
       onNodeExpand: function() {
         var node = this;
@@ -50,7 +50,7 @@
             droppableSetup.apply(this);
           })
 
-          table.treeTable("loadBranch", node, rows);
+          table.treetable("loadBranch", node, rows);
         });
       }
     });
