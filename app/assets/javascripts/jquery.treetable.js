@@ -1,5 +1,5 @@
 /*
- * jQuery treeTable Plugin 3.0.0
+ * jQuery treeTable Plugin 3.0.1
  * http://ludo.cubicphuse.nl/jquery-treetable
  *
  * Copyright 2013, Ludo van den Boom
@@ -111,14 +111,24 @@
     };
 
     Node.prototype.render = function() {
-      var settings = this.settings, target;
+      var handler,
+          settings = this.settings,
+          target;
 
       if (settings.expandable === true && this.isBranchNode()) {
+        handler = function(e) {
+          $(this).parents("table").treetable("node", $(this).parents("tr").data(settings.nodeIdAttr)).toggle();
+          return e.preventDefault();
+        };
+
         this.indenter.html(this.expander);
         target = settings.clickableNodeNames === true ? this.treeCell : this.expander;
-        target.unbind("click.treetable").bind("click.treetable", function(event) {
-          $(this).parents("table").treetable("node", $(this).parents("tr").data(settings.nodeIdAttr)).toggle();
-          return event.preventDefault();
+
+        target.off("click.treetable").on("click.treetable", handler);
+        target.off("keydown.treetable").on("keydown.treetable", function(e) {
+          if (e.keyCode == 13) {
+            handler.apply(this, [e]);
+          }
         });
       }
 
@@ -335,7 +345,7 @@
 
   // jQuery Plugin
   methods = {
-    init: function(options) {
+    init: function(options, force) {
       var settings;
 
       settings = $.extend({
@@ -361,15 +371,17 @@
       }, options);
 
       return this.each(function() {
-        var el, tree;
+        var el = $(this), tree;
 
-        tree = new Tree(this, settings);
-        tree.loadRows(this.rows).render();
+        if (force || el.data("treetable") === undefined) {
+          tree = new Tree(this, settings);
+          tree.loadRows(this.rows).render();
 
-        el = $(this).addClass("treetable").data("treetable", tree);
+          el.addClass("treetable").data("treetable", tree);
 
-        if (settings.onInitialized != null) {
-          settings.onInitialized.apply(tree);
+          if (settings.onInitialized != null) {
+            settings.onInitialized.apply(tree);
+          }
         }
 
         return el;
@@ -417,13 +429,26 @@
     },
 
     loadBranch: function(node, rows) {
+      var settings = this.data("treetable").settings,
+          tree = this.data("treetable").tree;
+
       rows = $(rows);
-      if (node.children.length > 0) {
+
+      if (node == null) { // Inserting new root nodes
+        this.append(rows);
+      } else if (node.children.length > 0) {
         rows.insertAfter(node.children[node.children.length-1].row);
       } else {
         rows.insertAfter(node.row);
       }
+
       this.data("treetable").loadRows(rows);
+
+      // Make sure nodes are properly initialized
+      // TODO Review implementation
+      rows.each(function() {
+        tree[$(this).data(settings.nodeIdAttr)].show();
+      });
 
       return this;
     },
