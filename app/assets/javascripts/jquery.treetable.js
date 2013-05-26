@@ -432,6 +432,7 @@
       var settings = this.data("treetable").settings,
           tree = this.data("treetable").tree;
 
+      // TODO Switch to $.parseHTML
       rows = $(rows);
 
       if (node == null) { // Inserting new root nodes
@@ -445,8 +446,7 @@
       this.data("treetable").loadRows(rows);
 
       // Make sure nodes are properly initialized
-      // TODO Review implementation
-      rows.each(function() {
+      rows.filter("tr").each(function() {
         tree[$(this).data(settings.nodeIdAttr)].show();
       });
 
