@@ -1,5 +1,5 @@
 /*
- * jQuery treeTable Plugin 3.0.1
+ * jQuery treeTable Plugin 3.0.2
  * http://ludo.cubicphuse.nl/jquery-treetable
  *
  * Copyright 2013, Ludo van den Boom
@@ -50,8 +50,13 @@
     };
 
     Node.prototype.collapse = function() {
-      this._hideChildren();
+      if (this.collapsed()) {
+        return this;
+      }
+
       this.row.removeClass("expanded").addClass("collapsed");
+
+      this._hideChildren();
       this.expander.attr("title", this.settings.stringExpand);
 
       if (this.initialized && this.settings.onNodeCollapse != null) {
@@ -61,15 +66,27 @@
       return this;
     };
 
+    Node.prototype.collapsed = function() {
+      return this.row.hasClass("collapsed");
+    };
+
     // TODO destroy: remove event handlers, expander, indenter, etc.
 
     Node.prototype.expand = function() {
+      if (this.expanded()) {
+        return this;
+      }
+
+      this.row.removeClass("collapsed").addClass("expanded");
+
       if (this.initialized && this.settings.onNodeExpand != null) {
         this.settings.onNodeExpand.apply(this);
       }
 
-      this.row.removeClass("collapsed").addClass("expanded");
-      this._showChildren();
+      if ($(this.row).is(":visible")) {
+        this._showChildren();
+      }
+
       this.expander.attr("title", this.settings.stringCollapse);
 
       return this;
@@ -91,6 +108,12 @@
       } else {
         return false;
       }
+    };
+
+    Node.prototype.updateBranchLeafClass = function(){
+      this.row.removeClass('branch');
+      this.row.removeClass('leaf');
+      this.row.addClass(this.isBranchNode() ? 'branch' : 'leaf');
     };
 
     Node.prototype.level = function() {
@@ -130,12 +153,6 @@
             handler.apply(this, [e]);
           }
         });
-      }
-
-      if (settings.expandable === true && settings.initialState === "collapsed") {
-        this.collapse();
-      } else {
-        this.expand();
       }
 
       this.indenter[0].style.paddingLeft = "" + (this.level() * settings.indent) + "px";
@@ -191,10 +208,20 @@
     };
 
     Node.prototype._initialize = function() {
+      var settings = this.settings;
+
       this.render();
-      if (this.settings.onNodeInitialized != null) {
-        this.settings.onNodeInitialized.apply(this);
+
+      if (settings.expandable === true && settings.initialState === "collapsed") {
+        this.collapse();
+      } else {
+        this.expand();
       }
+
+      if (settings.onNodeInitialized != null) {
+        settings.onNodeInitialized.apply(this);
+      }
+
       return this.initialized = true;
     };
 
@@ -245,6 +272,14 @@
       return _results;
     };
 
+    Tree.prototype.findLastNode = function (node) {
+      if (node.children.length > 0) {
+        return this.findLastNode(node.children[node.children.length - 1]);
+      } else {
+        return node;
+      }
+    };
+
     Tree.prototype.loadRows = function(rows) {
       var node, row, i;
 
@@ -266,6 +301,10 @@
         }
       }
 
+      for (i = 0; i < this.nodes.length; i++) {
+        node = this.nodes[i].updateBranchLeafClass();
+      }
+
       return this;
     };
 
@@ -277,6 +316,7 @@
       //    is).
       // 3: +node+ should not be inserted in a location in a branch if this would
       //    result in +node+ being an ancestor of itself.
+      var nodeParent = node.parentNode();
       if (node !== destination && destination.id !== node.parentId && $.inArray(node, destination.ancestors()) === -1) {
         node.setParent(destination);
         this._moveRows(node, destination);
@@ -287,6 +327,14 @@
           node.parentNode().render();
         }
       }
+
+      if(nodeParent){
+        nodeParent.updateBranchLeafClass();
+      }
+      if(node.parentNode()){
+        node.parentNode().updateBranchLeafClass();
+      }
+      node.updateBranchLeafClass();
       return this;
     };
 
@@ -330,11 +378,13 @@
 
         // Clean up Tree object (so Node objects are GC-ed)
         delete this.tree[child.id];
-        this.nodes.splice($.inArray(child, this.nodes), 1)
+        this.nodes.splice($.inArray(child, this.nodes), 1);
       }
 
       // Reset node's collection of children
       node.children = [];
+
+      node.updateBranchLeafClass();
 
       return this;
     };
@@ -420,6 +470,10 @@
       var node = this.data("treetable").tree[id];
 
       if (node) {
+        if (!node.initialized) {
+          node._initialize();
+        }
+
         node.expand();
       } else {
         throw new Error("Unknown node '" + id + "'");
@@ -437,10 +491,9 @@
 
       if (node == null) { // Inserting new root nodes
         this.append(rows);
-      } else if (node.children.length > 0) {
-        rows.insertAfter(node.children[node.children.length-1].row);
       } else {
-        rows.insertAfter(node.row);
+        var lastNode = this.data("treetable").findLastNode(node);
+        rows.insertAfter(lastNode.row);
       }
 
       this.data("treetable").loadRows(rows);
@@ -449,6 +502,11 @@
       rows.filter("tr").each(function() {
         tree[$(this).data(settings.nodeIdAttr)].show();
       });
+
+      if (node != null) {
+        // Re-render parent to ensure expander icon is shown (#79)
+        node.render().expand();
+      }
 
       return this;
     },
