@@ -1,5 +1,5 @@
 /*
- * jQuery treeTable Plugin 3.0.2
+ * jQuery treetable Plugin 3.1.0
  * http://ludo.cubicphuse.nl/jquery-treetable
  *
  * Copyright 2013, Ludo van den Boom
@@ -338,6 +338,18 @@
       return this;
     };
 
+    Tree.prototype.removeNode = function(node) {
+      // Recursively remove all descendants of +node+
+      this.unloadBranch(node);
+
+      // Remove node from DOM (<tr>)
+      node.row.remove();
+
+      // Clean up Tree object (so Node objects are GC-ed)
+      delete this.tree[node.id];
+      this.nodes.splice($.inArray(node, this.nodes), 1);
+    }
+
     Tree.prototype.render = function() {
       var root, _i, _len, _ref;
       _ref = this.roots;
@@ -351,34 +363,21 @@
       return this;
     };
 
-    Tree.prototype._moveRows = function(node, destination) {
-      var child, _i, _len, _ref, _results;
-      node.row.insertAfter(destination.row);
-      node.render();
-      _ref = node.children;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        child = _ref[_i];
-        _results.push(this._moveRows(child, node));
-      }
-      return _results;
+    Tree.prototype.sortBranch = function(node, sortFun) {
+      // First sort internal array of children
+      node.children.sort(sortFun);
+
+      // Next render rows in correct order on page
+      this._sortChildRows(node);
+
+      return this;
     };
 
     Tree.prototype.unloadBranch = function(node) {
-      var child, children, i;
+      var children, i;
 
       for (i = 0; i < node.children.length; i++) {
-        child = node.children[i];
-
-        // Recursively remove all descendants of +node+
-        this.unloadBranch(child);
-
-        // Remove child from DOM (<tr>)
-        child.row.remove();
-
-        // Clean up Tree object (so Node objects are GC-ed)
-        delete this.tree[child.id];
-        this.nodes.splice($.inArray(child, this.nodes), 1);
+        this.removeNode(node.children[i]);
       }
 
       // Reset node's collection of children
@@ -389,6 +388,23 @@
       return this;
     };
 
+    Tree.prototype._moveRows = function(node, destination) {
+      var children = node.children, i;
+
+      node.row.insertAfter(destination.row);
+      node.render();
+
+      // Loop backwards through children to have them end up on UI in correct
+      // order (see #112)
+      for (i = children.length - 1; i >= 0; i--) {
+        this._moveRows(children[i], node);
+      }
+    };
+
+    // Special _moveRows case, move children to itself to force sorting
+    Tree.prototype._sortChildRows = function(parentNode) {
+      return this._moveRows(parentNode, parentNode);
+    };
 
     return Tree;
   })();
@@ -525,6 +541,18 @@
       return this.data("treetable").tree[id];
     },
 
+    removeNode: function(id) {
+      var node = this.data("treetable").tree[id];
+
+      if (node) {
+        this.data("treetable").removeNode(node);
+      } else {
+        throw new Error("Unknown node '" + id + "'");
+      }
+
+      return this;
+    },
+
     reveal: function(id) {
       var node = this.data("treetable").tree[id];
 
@@ -534,6 +562,38 @@
         throw new Error("Unknown node '" + id + "'");
       }
 
+      return this;
+    },
+
+    sortBranch: function(node, columnOrFunction) {
+      var settings = this.data("treetable").settings,
+          prepValue,
+          sortFun;
+
+      columnOrFunction = columnOrFunction || settings.column;
+      sortFun = columnOrFunction;
+
+      if ($.isNumeric(columnOrFunction)) {
+        sortFun = function(a, b) {
+          var extractValue, valA, valB;
+
+          extractValue = function(node) {
+            var val = node.row.find("td:eq(" + columnOrFunction + ")").text();
+            // Ignore trailing/leading whitespace and use uppercase values for
+            // case insensitive ordering
+            return $.trim(val).toUpperCase();
+          }
+
+          valA = extractValue(a);
+          valB = extractValue(b);
+
+          if (valA < valB) return -1;
+          if (valA > valB) return 1;
+          return 0;
+        };
+      }
+
+      this.data("treetable").sortBranch(node, sortFun);
       return this;
     },
 
