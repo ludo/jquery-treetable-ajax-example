@@ -56,13 +56,13 @@
     });
 
     // Highlight selected row
-    $("#tree tbody tr").live("mousedown", function() {
+    $(document).on("mousedown", "#tree tbody tr", function() {
       $("tr.selected").removeClass("selected");
       $(this).addClass("selected");
     });
 
     // Drag & Drop Example Code
-    $("#tree .file, #tree .directory").live("mouseenter", function() {
+    $(document).on("mouseenter", "#tree .file, #tree .directory", function() {
       var el = $(this);
 
       if(!el.data("dndInit")) {

@@ -11,8 +11,14 @@ class NodesController < ApplicationController
 
   def update
     @node = Node.find(params[:id].to_i)
-    @node.update_attributes(params[:node])
+    @node.update_attributes(node_params)
 
     render text: ""
+  end
+
+  private
+
+  def node_params
+    params.require(:node).permit(:kind, :modified_at, :name, :parent, :parent_id, :size)
   end
 end
